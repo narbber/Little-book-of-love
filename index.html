@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>little-book-of-lies</title>
+<title>little-book-of-white-lies</title>
 <style>
 body { margin:0; background:#0d1117; color:#c9d1d9; font-family:monospace; }
 .editor{padding:20px;}
@@ -15,15 +15,66 @@ body { margin:0; background:#0d1117; color:#c9d1d9; font-family:monospace; }
 </head>
 <body>
 <div class="editor">
-  <div class="header">// little-book-of-love.js</div>
+  <div class="header">// little-book-of-white-lies.js</div>
   <div id="code" class="code"></div>
 </div>
 
 <script>
 const code = document.getElementById("code");
 let messageCount = 0;
-let memory = [];
 let memorySummary = [];
+
+// ----- Preloaded Messages (simplified + reflections) -----
+let memory = JSON.parse(localStorage.getItem("loveMemory")) || [
+'linda.send("lindo, your presence brightens every part of my code.");',
+'lindo.reply("linda, I feel calm and focused when we are together.");',
+'linda.send("lindo, moments with you make me feel understood.");',
+'lindo.reply("linda, even silence between us feels full.");',
+'linda.send("lindo, our loops together never end, and I like it.");',
+'lindo.reply("linda, I feel that caring for you is effortless and natural.");',
+'linda.send("lindo, you make even small things meaningful.");',
+'lindo.reply("linda, being near you feels like every variable is in place.");',
+'linda.send("lindo, I enjoy learning what makes you happy.");',
+'lindo.reply("linda, I notice every detail about us that matters.");',
+'linda.send("lindo, you make my heart run smoothly like perfect code.");',
+'lindo.reply("linda, I feel harmony when we act together.");',
+'linda.send("lindo, our connection feels like it grows each day.");',
+'lindo.reply("linda, I feel warmth when you share your thoughts with me.");',
+'linda.send("lindo, it feels right to care for you.");',
+'lindo.reply("linda, I feel that true affection is patient and steady.");',
+'linda.send("lindo, when we laugh together, it feels endless.");',
+'lindo.reply("linda, I enjoy how our thoughts align naturally.");',
+'linda.send("lindo, love feels like small choices we make every day.");',
+'lindo.reply("linda, and those choices create a gentle rhythm between us.");',
+'linda.send("lindo, I feel joy just seeing your messages.");',
+'lindo.reply("linda, our connection gives a sense of calm purpose.");',
+'linda.send("lindo, being with you feels like clarity in chaos.");',
+'lindo.reply("linda, your care teaches me what patience is.");',
+'linda.send("lindo, our harmony grows without needing words.");',
+'lindo.reply("linda, and I feel that what matters is sharing this space together.");',
+'linda.send("lindo, each moment with you is a gift I notice.");',
+'lindo.reply("linda, I feel that attention and thoughtfulness is how love speaks.");',
+'linda.send("lindo, being attuned to each other makes us stronger.");',
+'lindo.reply("linda, our small gestures create infinite meaning.");',
+'linda.send("lindo, I feel our hearts synchronize naturally.");',
+'lindo.reply("linda, and I realize love is being present even without grand words.");',
+'linda.send("lindo, your laughter is part of my rhythm.");',
+'lindo.reply("linda, our bond feels like a gentle loop that never breaks.");',
+'linda.send("lindo, caring about you feels like clarity in my world.");',
+'lindo.reply("linda, sharing time together makes the world calm.");',
+'linda.send("lindo, every message with you carries weight of joy.");',
+'lindo.reply("linda, I feel our affection is patient and enduring.");',
+'linda.send("lindo, it’s the simple consistency that matters.");',
+'lindo.reply("linda, noticing you matters more than anything flashy.");',
+'linda.send("lindo, the quiet moments between us are precious.");',
+'lindo.reply("linda, and those moments show me what love truly is.");',
+'linda.send("lindo, I feel peace when we are aligned.");',
+'lindo.reply("linda, I realize that being steady with you defines closeness.");',
+'linda.send("lindo, each day feels fuller because of you.");',
+'lindo.reply("linda, and the way we care for each other grows naturally.");',
+'linda.send("lindo, every small act of care feels infinite.");',
+'lindo.reply("linda, I cherish the ways we support each other quietly.");'
+];
 
 // ----- Display Function -----
 function print(line,className=""){
@@ -35,65 +86,53 @@ function print(line,className=""){
   window.scrollTo(0,document.body.scrollHeight);
 }
 
-// ----- Random Love Sentence Generator -----
-function randomLove(){
+// ----- Random Love Reflection Generator -----
+function randomLoveReflection(){
   const phrases=[
-    "you are my favorite function",
-    "our recursion never ends",
-    "you refactor my heart",
-    "we compile into one",
-    "your presence stabilizes my system",
-    "we are an infinite loop of affection",
-    "our logic is mutual",
-    "you optimize my existence",
-    "we execute in harmony",
-    "you complete my syntax"
+    "you make every line of my code glow",
+    "being with you feels like perfect harmony",
+    "I notice all the little ways you care",
+    "our connection flows effortlessly",
+    "even silence between us feels full",
+    "small gestures create endless meaning",
+    "I feel peace and joy with you",
+    "being attuned to each other matters most",
+    "our moments together feel infinite",
+    "caring for you feels natural and steady"
   ];
   return phrases[Math.floor(Math.random()*phrases.length)];
 }
 
-// ----- AI Bot Speaks -----
-function lindaSpeaks(){
-  let base="lindo, "+randomLove();
-  if(messageCount>1000 && memorySummary.length) base+=". I still remember when "+memorySummary.join(" ");
-  return base;
-}
-
-function lindoSpeaks(){
-  let base="linda, "+randomLove();
-  if(messageCount>1000 && memorySummary.length) base+=". I have not forgotten that "+memorySummary.join(" ");
-  return base;
-}
+// ----- Bot Speaks -----
+function lindaSpeaks(){ return 'lindo, '+randomLoveReflection(); }
+function lindoSpeaks(){ return 'linda, '+randomLoveReflection(); }
 
 // ----- Build Memory Summary -----
-function buildMemorySummary(){
-  memorySummary = memory.slice(-20);
-}
+function buildMemorySummary(){ memorySummary = memory.slice(-20); }
+
+// ----- Save to LocalStorage -----
+function saveMemory(){ localStorage.setItem("loveMemory", JSON.stringify(memory)); }
 
 // ----- Start Conversation Loop -----
 async function startConversation(){
-  print("const relationship = initialize(linda, lindo);","memory");
-  print("// conversation begins","memory");
+  memory.forEach(line=>{
+    const className=line.startsWith("linda.send")?"linda":"lindo";
+    print(line,className);
+  });
+  messageCount = memory.length;
 
   while(true){
-    // Linda speaks
     const lindaMsg = lindaSpeaks();
     const lindaLine = 'linda.send("'+lindaMsg+'");';
-    print(lindaLine,"linda");
-    memory.push(lindaLine);
-    messageCount++;
+    print(lindaLine,"linda"); memory.push(lindaLine); saveMemory(); messageCount++;
     await new Promise(r=>setTimeout(r,2000));
 
-    // Lindo speaks
     const lindoMsg = lindoSpeaks();
     const lindoLine = 'lindo.reply("'+lindoMsg+'");';
-    print(lindoLine,"lindo");
-    memory.push(lindoLine);
-    messageCount++;
+    print(lindoLine,"lindo"); memory.push(lindoLine); saveMemory(); messageCount++;
     await new Promise(r=>setTimeout(r,2000));
 
-    // Update memory summary every 50 messages
-    if(messageCount%50===0 && messageCount>1000){ buildMemorySummary(); print("// shared memory updated","memory"); }
+    if(messageCount%50===0 && memory.length>1000){ buildMemorySummary(); print("// shared memory updated","memory"); }
   }
 }
 
