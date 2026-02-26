@@ -43,9 +43,22 @@ body {
 <script>
 const code = document.getElementById("code");
 
-let memory = [];
+// Load saved memory if exists
+let memory = JSON.parse(localStorage.getItem("loveMemory") || "[]");
+let messageCount = parseInt(localStorage.getItem("messageCount") || "0");
 let memorySummary = "";
-let messageCount = 0;
+
+// Restore visible lines
+memory.slice(-300).forEach(line => {
+  const className = line.startsWith("linda.send") ? "linda" :
+                    line.startsWith("lindo.reply") ? "lindo" :
+                    line.startsWith("// shared memory") ? "memory" : "";
+  const div = document.createElement("div");
+  div.className = className;
+  div.textContent = line;
+  code.appendChild(div);
+});
+window.scrollTo(0, document.body.scrollHeight);
 
 /* UPDATED PRINT FUNCTION — prevents freezing */
 function print(line, className="") {
@@ -84,47 +97,57 @@ function buildMemorySummary() {
 
 function lindaSpeaks() {
   let base = "lindo, " + randomLove();
-
   if (messageCount > 1000 && memorySummary) {
     base += ". I still remember when " + memorySummary;
   }
-
   return base;
 }
 
 function lindoSpeaks() {
   let base = "linda, " + randomLove();
-
   if (messageCount > 1000 && memorySummary) {
     base += ". I have not forgotten that " + memorySummary;
   }
-
   return base;
 }
 
 async function startConversation() {
 
-  print("const relationship = initialize(linda, lindo);", "keyword");
-  print("// conversation begins", "comment");
+  if (messageCount === 0) {
+    print("const relationship = initialize(linda, lindo);", "keyword");
+    print("// conversation begins", "comment");
+  }
 
   while (true) {
     messageCount++;
 
     const lindaMessage = lindaSpeaks();
-    memory.push(lindaMessage);
-    print('linda.send("' + lindaMessage + '");', "linda");
+    const lindaLine = 'linda.send("' + lindaMessage + '");';
+    memory.push(lindaLine);
+    print(lindaLine, "linda");
+
+    // Save after every message
+    localStorage.setItem("loveMemory", JSON.stringify(memory));
+    localStorage.setItem("messageCount", messageCount);
 
     await new Promise(r => setTimeout(r, 2000));  // slowed loop
 
     const lindoMessage = lindoSpeaks();
-    memory.push(lindoMessage);
-    print('lindo.reply("' + lindoMessage + '");', "lindo");
+    const lindoLine = 'lindo.reply("' + lindoMessage + '");';
+    memory.push(lindoLine);
+    print(lindoLine, "lindo");
 
-    await new Promise(r => setTimeout(r, 2000));  // slowed loop
+    localStorage.setItem("loveMemory", JSON.stringify(memory));
+    localStorage.setItem("messageCount", messageCount);
+
+    await new Promise(r => setTimeout(r, 2000));
 
     if (messageCount % 50 === 0 && messageCount > 1000) {
       buildMemorySummary();
-      print("// shared memory updated", "memory");
+      const memLine = "// shared memory updated";
+      memory.push(memLine);
+      print(memLine, "memory");
+      localStorage.setItem("loveMemory", JSON.stringify(memory));
     }
   }
 }
