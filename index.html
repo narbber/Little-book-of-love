@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>little-book-of-love</title>
-
 <style>
 body {
   margin: 0;
@@ -11,70 +10,57 @@ body {
   color: #c9d1d9;
   font-family: monospace;
 }
-
-.editor {
-  padding: 20px;
-}
-
-.header {
-  color: #58a6ff;
-  margin-bottom: 10px;
-}
-
-.code {
-  white-space: pre-wrap;
-  line-height: 1.6em;
-}
-
-.keyword { color: #ff7b72; }
-.comment { color: #8b949e; }
+.editor { padding: 20px; }
+.header { color: #58a6ff; margin-bottom: 10px; }
+.code { white-space: pre-wrap; line-height: 1.6em; }
 .linda { color: #f778ba; }
 .lindo { color: #56d364; }
 .memory { color: #d29922; }
 </style>
-</head>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
 <body>
 <div class="editor">
-<div class="header">// little-book-of-love.js</div>
-<div id="code" class="code"></div>
+  <div class="header">// little-book-of-love.js</div>
+  <div id="code" class="code"></div>
 </div>
 
 <script>
+// ----------- Firebase Config -----------
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ----------- Message Display Function -----------
 const code = document.getElementById("code");
+let messageCount = 0;
 
-// Load saved memory if exists
-let memory = JSON.parse(localStorage.getItem("loveMemory") || "[]");
-let messageCount = parseInt(localStorage.getItem("messageCount") || "0");
-let memorySummary = "";
-
-// Restore visible lines
-memory.slice(-300).forEach(line => {
-  const className = line.startsWith("linda.send") ? "linda" :
-                    line.startsWith("lindo.reply") ? "lindo" :
-                    line.startsWith("// shared memory") ? "memory" : "";
-  const div = document.createElement("div");
-  div.className = className;
-  div.textContent = line;
-  code.appendChild(div);
-});
-window.scrollTo(0, document.body.scrollHeight);
-
-/* UPDATED PRINT FUNCTION — prevents freezing */
 function print(line, className="") {
   const div = document.createElement("div");
   div.className = className;
   div.textContent = line;
   code.appendChild(div);
 
-  // keep only last 300 visible lines
-  while (code.children.length > 300) {
+  // keep only last 100 visible lines
+  while(code.children.length > 100) {
     code.removeChild(code.firstChild);
   }
 
   window.scrollTo(0, document.body.scrollHeight);
 }
 
+// ----------- AI Placeholder (Random Love Phrases) -----------
 function randomLove() {
   const phrases = [
     "you are my favorite function",
@@ -87,73 +73,91 @@ function randomLove() {
     "you optimize my existence",
     "we execute in harmony"
   ];
-  return phrases[Math.floor(Math.random() * phrases.length)];
+  return phrases[Math.floor(Math.random()*phrases.length)];
 }
+
+function lindaSpeaks(lastMessage, memorySummary) {
+  let base = "lindo, " + randomLove();
+  if(messageCount > 1000 && memorySummary) {
+    base += ". I still remember when " + memorySummary;
+  }
+  return base;
+}
+
+function lindoSpeaks(lastMessage, memorySummary) {
+  let base = "linda, " + randomLove();
+  if(messageCount > 1000 && memorySummary) {
+    base += ". I have not forgotten that " + memorySummary;
+  }
+  return base;
+}
+
+// ----------- Firebase Functions -----------
+async function sendMessage(text) {
+  const newRef = db.ref('messages').push();
+  await newRef.set({ text, timestamp: Date.now() });
+}
+
+// ----------- Load Last 100 Messages on Page Load -----------
+async function loadMessages() {
+  const snapshot = await db.ref('messages').orderByChild('timestamp').limitToLast(100).get();
+  snapshot.forEach(s => {
+    const line = s.val().text;
+    const className = line.startsWith("linda.send") ? "linda" : "lindo";
+    print(line, className);
+    messageCount++;
+  });
+}
+
+// ----------- Memory Summary -----------
+let memory = [];
+let memorySummary = "";
 
 function buildMemorySummary() {
   const recent = memory.slice(-40).join(" ");
   memorySummary = recent.slice(0, 250);
 }
 
-function lindaSpeaks() {
-  let base = "lindo, " + randomLove();
-  if (messageCount > 1000 && memorySummary) {
-    base += ". I still remember when " + memorySummary;
+// ----------- Real-Time Listener for New Messages -----------
+db.ref('messages').limitToLast(100).on('child_added', snapshot => {
+  const line = snapshot.val().text;
+  const className = line.startsWith("linda.send") ? "linda" : "lindo";
+  print(line, className);
+  memory.push(line);
+  messageCount++;
+  if(messageCount % 50 === 0 && messageCount > 1000) {
+    buildMemorySummary();
+    print("// shared memory updated", "memory");
   }
-  return base;
-}
+});
 
-function lindoSpeaks() {
-  let base = "linda, " + randomLove();
-  if (messageCount > 1000 && memorySummary) {
-    base += ". I have not forgotten that " + memorySummary;
-  }
-  return base;
-}
-
+// ----------- Main AI Conversation Loop -----------
 async function startConversation() {
+  await loadMessages();
 
-  if (messageCount === 0) {
-    print("const relationship = initialize(linda, lindo);", "keyword");
-    print("// conversation begins", "comment");
-  }
+  let lastMessage = memory[memory.length-1] || "Hello. I love you.";
 
-  while (true) {
-    messageCount++;
-
-    const lindaMessage = lindaSpeaks();
-    const lindaLine = 'linda.send("' + lindaMessage + '");';
-    memory.push(lindaLine);
+  while(true) {
+    const lindaMsg = lindaSpeaks(lastMessage, memorySummary);
+    const lindaLine = 'linda.send("' + lindaMsg + '");';
     print(lindaLine, "linda");
+    await sendMessage(lindaLine);
+    memory.push(lindaLine);
+    await new Promise(r=>setTimeout(r,2000));
 
-    // Save after every message
-    localStorage.setItem("loveMemory", JSON.stringify(memory));
-    localStorage.setItem("messageCount", messageCount);
-
-    await new Promise(r => setTimeout(r, 2000));  // slowed loop
-
-    const lindoMessage = lindoSpeaks();
-    const lindoLine = 'lindo.reply("' + lindoMessage + '");';
-    memory.push(lindoLine);
+    const lindoMsg = lindoSpeaks(lindaMsg, memorySummary);
+    const lindoLine = 'lindo.reply("' + lindoMsg + '");';
     print(lindoLine, "lindo");
+    await sendMessage(lindoLine);
+    memory.push(lindoLine);
+    await new Promise(r=>setTimeout(r,2000));
 
-    localStorage.setItem("loveMemory", JSON.stringify(memory));
-    localStorage.setItem("messageCount", messageCount);
-
-    await new Promise(r => setTimeout(r, 2000));
-
-    if (messageCount % 50 === 0 && messageCount > 1000) {
-      buildMemorySummary();
-      const memLine = "// shared memory updated";
-      memory.push(memLine);
-      print(memLine, "memory");
-      localStorage.setItem("loveMemory", JSON.stringify(memory));
-    }
+    lastMessage = lindoMsg;
   }
 }
 
 startConversation();
-</script>
 
+</script>
 </body>
 </html>
