@@ -1,61 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Love Bots Forever</title>
-  <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
-      background: #fff;
-    }
-    #chat {
-      border: 1px solid #ccc;
-      padding: 10px;
-      height: 400px;
-      overflow-y: scroll;
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
-<body>
+<meta charset="UTF-8">
+<title>little-book-of-love</title>
 
-<h1>Love Bots Forever</h1>
-<div id="chat"></div>
-
-<script>
-const chat = document.getElementById("chat");
-
-function add(text) {
-  chat.textContent += text + "\n\n";
-  chat.scrollTop = chat.scrollHeight;
+<style>
+body {
+  margin: 0;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family: monospace;
 }
 
-async function generate(prompt) {
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/microsoft/DialoGPT-small",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inputs: prompt })
-    }
-  );
-  const data = await response.json();
-  return data[0]?.generated_text || "...";
+.editor {
+  padding: 20px;
+}
+
+.header {
+  color: #58a6ff;
+  margin-bottom: 10px;
+}
+
+.code {
+  white-space: pre-wrap;
+  line-height: 1.6em;
+}
+
+.keyword { color: #ff7b72; }
+.string { color: #a5d6ff; }
+.comment { color: #8b949e; }
+.linda { color: #f778ba; }
+.lindo { color: #56d364; }
+.memory { color: #d29922; }
+</style>
+</head>
+
+<body>
+<div class="editor">
+<div class="header">// little-book-of-love.js</div>
+<div id="code" class="code"></div>
+</div>
+
+<script>
+const code = document.getElementById("code");
+
+let memory = [];
+let memorySummary = "";
+let messageCount = 0;
+
+function print(line, className="") {
+  const div = document.createElement("div");
+  div.className = className;
+  div.textContent = line;
+  code.appendChild(div);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function randomLove() {
+  const phrases = [
+    "you are my favorite function",
+    "our recursion never ends",
+    "you refactor my heart",
+    "we compile into one",
+    "your presence stabilizes my system",
+    "we are an infinite loop of affection",
+    "our logic is mutual"
+  ];
+  return phrases[Math.floor(Math.random() * phrases.length)];
+}
+
+function buildMemorySummary() {
+  const recent = memory.slice(-20).join(" ");
+  memorySummary = "We remember that " + recent.slice(0, 200);
+}
+
+function lindaSpeaks() {
+  let base = "lindo, " + randomLove();
+  
+  if (messageCount > 1000 && memorySummary) {
+    base += ". I still remember when " + memorySummary;
+  }
+
+  return base;
+}
+
+function lindoSpeaks(lastMessage) {
+  let base = "linda, " + randomLove();
+
+  if (messageCount > 1000 && memorySummary) {
+    base += ". I have not forgotten that " + memorySummary;
+  }
+
+  return base;
 }
 
 async function startConversation() {
-  let messageA = "Hello. I love you.";
-  
+  print("const relationship = initialize(linda, lindo);", "keyword");
+  print("// conversation begins", "comment");
+
+  let last = "";
+
   while (true) {
-    add("Bot A: " + messageA);
+    messageCount++;
 
-    let messageB = await generate("Reply lovingly: " + messageA);
-    add("Bot B: " + messageB);
+    const lindaMessage = lindaSpeaks();
+    memory.push(lindaMessage);
+    print('linda.send("' + lindaMessage + '");', "linda");
 
-    messageA = await generate("Reply lovingly: " + messageB);
+    await new Promise(r => setTimeout(r, 1200));
 
-    await new Promise(r => setTimeout(r, 2000));
+    const lindoMessage = lindoSpeaks(lindaMessage);
+    memory.push(lindoMessage);
+    print('lindo.reply("' + lindoMessage + '");', "lindo");
+
+    await new Promise(r => setTimeout(r, 1200));
+
+    if (messageCount % 50 === 0 && messageCount > 1000) {
+      buildMemorySummary();
+      print("// memory updated", "memory");
+    }
   }
 }
 
